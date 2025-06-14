@@ -69,6 +69,15 @@ bot.on('message', async (msg) => {
     bot.sendMessage(msg.chat.id, `✅ Skor: ${score}\n💸 Token gönderildi!\n🔗 TxHash: ${response.data.transactionHash}`);
   } catch (error) {
     console.error('❌ Token gönderimi hatası:', error?.response?.data || error.message);
-    bot.sendMessage(msg.chat.id, "❌ Token gönderimi başarısız oldu!");
+
+    let errorMsg = "❌ Token gönderimi başarısız oldu!";
+
+    if (error.response && error.response.data) {
+      errorMsg += `\nDetaylar: ${JSON.stringify(error.response.data)}`;
+    } else if (error.message) {
+      errorMsg += `\nHata mesajı: ${error.message}`;
+    }
+
+    bot.sendMessage(msg.chat.id, errorMsg);
   }
 });
