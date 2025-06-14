@@ -2,27 +2,32 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const express = require('express');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
+// BOT BAŞLAT
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
+// HEALTH CHECK
 app.get('/', (req, res) => {
-  res.send('Bot çalışıyor!');
+  res.send('🤖 Bot çalışıyor!');
 });
 
 app.listen(port, () => {
-  console.log(`Sunucu ${port} portunda çalışıyor`);
+  console.log(`🚀 Sunucu ${port} portunda çalışıyor`);
 });
 
+// HATALARI YAKALA
 bot.on('polling_error', (error) => {
-  console.error('Polling error:', error);
+  console.error('📡 Polling error:', error);
 });
 
 bot.on('error', (error) => {
-  console.error('General error:', error);
+  console.error('❗ General error:', error);
 });
 
+// /start KOMUTU
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
 
@@ -37,6 +42,8 @@ bot.onText(/\/start/, (msg) => {
     }
   });
 });
+
+// TEST SKOR KOMUTU
 bot.onText(/\/testscore/, async (msg) => {
   const chatId = msg.chat.id;
   const fake = {
@@ -48,15 +55,17 @@ bot.onText(/\/testscore/, async (msg) => {
     const response = await axios.post(process.env.API_URL, fake, {
       headers: { 'x-api-key': process.env.API_KEY }
     });
-    bot.sendMessage(chatId, `✅ Test token gönderildi! TxHash: ${response.data.transactionHash}`);
+    bot.sendMessage(chatId, `✅ Test token gönderildi!\n🔗 TxHash: ${response.data.transactionHash}`);
   } catch (err) {
-    console.error(err);
+    console.error('❌ Test skor gönderim hatası:', err?.response?.data || err.message);
     bot.sendMessage(chatId, "❌ Test token gönderimi başarısız!");
   }
 });
 
+// WEB APP VERİ YAKALAMA
 bot.on('message', async (msg) => {
-  if (!msg.web_app_data) return;
+  // /start ve komut mesajlarını geç
+  if (msg.text || !msg.web_app_data) return;
 
   let data;
   try {
@@ -76,9 +85,9 @@ bot.on('message', async (msg) => {
       headers: { 'x-api-key': process.env.API_KEY }
     });
 
-    bot.sendMessage(msg.chat.id, `✅ Skor: ${score}\n💸 Token gönderildi!\nİşlem Hash: ${response.data.transactionHash}`);
+    bot.sendMessage(msg.chat.id, `✅ Skor: ${score}\n💸 Token gönderildi!\n🔗 TxHash: ${response.data.transactionHash}`);
   } catch (error) {
-    console.error(error);
+    console.error('❌ Token gönderimi hatası:', error?.response?.data || error.message);
     bot.sendMessage(msg.chat.id, "❌ Token gönderimi başarısız oldu!");
   }
 });
