@@ -23,7 +23,7 @@ bot.onText(/\/start/, (msg) => {
       inline_keyboard: [[
         {
           text: "🔪 Crypto Ninja'yı Oyna",
-          web_app: { url: "https://senin-unity-oyun-webapp-linkin.vercel.app" }
+          web_app: { url: "https://avaxnetwork.itch.io/avax-runner" }
         }
       ]]
     }
