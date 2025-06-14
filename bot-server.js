@@ -1,7 +1,13 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000; // Render varsayılan portu veya kendi belirlediğin port
+
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
 
 // Kullanıcıların doğrulama durumlarını tutan nesne
 // chatId => { verified: bool, question: string, answer: number }
