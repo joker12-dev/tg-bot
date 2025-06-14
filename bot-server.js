@@ -36,7 +36,7 @@ bot.onText(/\/start/, (msg) => {
       inline_keyboard: [[
         {
           text: "🔪 Crypto Ninja'yı Oyna",
-          web_app: { url: "https://bnbstrike.com" }
+          web_app: { url: "https://athype.online/" }
         }
       ]]
     }
