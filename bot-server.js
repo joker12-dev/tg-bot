@@ -1,8 +1,19 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
 
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+
+app.get('/', (req, res) => {
+  res.send('Bot çalışıyor!');
+});
+
+app.listen(port, () => {
+  console.log(`Sunucu ${port} portunda çalışıyor`);
+});
 
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
