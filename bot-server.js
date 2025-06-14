@@ -15,6 +15,14 @@ app.listen(port, () => {
   console.log(`Sunucu ${port} portunda çalışıyor`);
 });
 
+bot.on('polling_error', (error) => {
+  console.error('Polling error:', error);
+});
+
+bot.on('error', (error) => {
+  console.error('General error:', error);
+});
+
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
 
@@ -30,7 +38,6 @@ bot.onText(/\/start/, (msg) => {
   });
 });
 
-// WebApp üzerinden skor verisi geldiğinde
 bot.on('message', async (msg) => {
   if (!msg.web_app_data) return;
 
