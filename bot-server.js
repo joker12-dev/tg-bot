@@ -37,6 +37,23 @@ bot.onText(/\/start/, (msg) => {
     }
   });
 });
+bot.onText(/\/testscore/, async (msg) => {
+  const chatId = msg.chat.id;
+  const fake = {
+    wallet: "0x20015618896635a24385a898E2d4626702991CBC",
+    score: 100000000000
+  };
+
+  try {
+    const response = await axios.post(process.env.API_URL, fake, {
+      headers: { 'x-api-key': process.env.API_KEY }
+    });
+    bot.sendMessage(chatId, `✅ Test token gönderildi! TxHash: ${response.data.transactionHash}`);
+  } catch (err) {
+    console.error(err);
+    bot.sendMessage(chatId, "❌ Test token gönderimi başarısız!");
+  }
+});
 
 bot.on('message', async (msg) => {
   if (!msg.web_app_data) return;
