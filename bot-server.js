@@ -43,40 +43,6 @@ bot.onText(/\/start/, (msg) => {
   });
 });
 
-// TEST SKOR KOMUTU
-bot.onText(/\/testscore/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  // 1. "Bekleniyor..." mesajını gönder
-  const statusMsg = await bot.sendMessage(chatId, "⏳ Bekleniyor: Ödeme hazırlanıyor...");
-
-  const fake = {
-    wallet: "0x20015618896635a24385a898E2d4626702991CBC",
-    score: 100000000000
-  };
-
-  try {
-    const response = await axios.post(process.env.API_URL, fake, {
-      headers: { 'x-api-key': process.env.API_KEY }
-    });
-
-    // 2. "Bekleniyor" mesajını sil
-    await bot.deleteMessage(chatId, statusMsg.message_id);
-
-    // 3. Başarılı sonucu bildir
-    await bot.sendMessage(chatId, `✅ Test token gönderildi!\n🔗 TxHash: ${response.data.transactionHash}`);
-  } catch (err) {
-    console.error(err);
-
-    // 4. "Bekleniyor" mesajını sil
-    await bot.deleteMessage(chatId, statusMsg.message_id);
-
-    // 5. Hata mesajı gönder
-    await bot.sendMessage(chatId, "❌ Test token gönderimi başarısız!");
-  }
-});
-
-
 // WEB APP VERİ YAKALAMA
 bot.on('message', async (msg) => {
   // /start ve komut mesajlarını geç
