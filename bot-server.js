@@ -14,22 +14,18 @@ const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-// Unity WebGL build dosyalarını sunmak için statik servis
-app.use(express.static('public'));  // public klasörüne WebGL build dosyalarını koy
-
 const verifiedUsers = new Set();
 
-// Telegram bot: /start komutu ve matematik doğrulaması + Web App butonu
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
 
   if (verifiedUsers.has(chatId)) {
-    return bot.sendMessage(chatId, "✅ Zaten doğrulama yapılmış. Aşağıdan oyuna erişebilirsin:", {
+    return bot.sendMessage(chatId, "✅ Zaten doğrulama yapılmış. Oyuna aşağıdaki butondan ulaşabilirsin:", {
       reply_markup: {
         inline_keyboard: [[
           {
             text: "🎮 Oyunu Aç",
-            web_app: { url: "https://athype.online/" }
+            web_app: { url: "https://athype.online/" }  // WebGL oyununun barındığı harici URL
           }
         ]]
       }
@@ -49,7 +45,7 @@ bot.onText(/\/start/, (msg) => {
           inline_keyboard: [[
             {
               text: "🎮 Oyunu Aç",
-              web_app: { url: "https://athype.online/" }
+              web_app: { url: "https://athype.online/" }  // Harici oyunun URL'si
             }
           ]]
         }
@@ -60,7 +56,6 @@ bot.onText(/\/start/, (msg) => {
   });
 });
 
-// /transfer endpoint’i (Unity’den token transfer isteği)
 app.post('/transfer', async (req, res) => {
   const { wallet, score, secret } = req.body;
 
@@ -87,9 +82,8 @@ app.post('/transfer', async (req, res) => {
   }
 });
 
-// Ana sayfa (WebGL oyunun index.html’i döner)
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
+  res.send("🤖 Bot ve transfer sunucusu çalışıyor!");
 });
 
 app.listen(PORT, () => {
