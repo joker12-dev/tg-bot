@@ -1,9 +1,8 @@
 require('dotenv').config();
-const fs = require('fs');
+const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
-const TelegramBot = require('node-telegram-bot-api');
 
 const app = express();
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
@@ -15,48 +14,57 @@ const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-// ✅ Doğrulanan kullanıcıları kalıcı olarak saklayan JSON dosyası
-const VERIFIED_USERS_FILE = 'verified_users.json';
-let verifiedUsers = new Set();
+// ✅ Doğrulanmış kullanıcıları burada tutuyoruz
+const verifiedUsers = new Set();
 
-// 🔄 Başlangıçta dosyadan kullanıcıları oku
-if (fs.existsSync(VERIFIED_USERS_FILE)) {
-  const data = fs.readFileSync(VERIFIED_USERS_FILE, 'utf-8');
-  const ids = JSON.parse(data);
-  verifiedUsers = new Set(ids);
-}
-
-// 💾 Kullanıcı doğrulandıysa dosyaya yaz
-function saveVerifiedUsers() {
-  fs.writeFileSync(VERIFIED_USERS_FILE, JSON.stringify([...verifiedUsers]), 'utf-8');
-}
-
-// ✅ /start komutu ile matematik doğrulaması
+// ✅ /start komutu: kullanıcıya ID’sini göster ve doğrulama sorusu sor
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
 
   if (verifiedUsers.has(chatId)) {
-    return bot.sendMessage(chatId, `✅ Zaten doğrulandın.\n🆔 *Senin Telegram ID’n:* \`${chatId}\`\n🎮 Bu ID’yi oyuna girerken "User ID" alanına yapıştır.\n🔗 https://athype.online/`, { parse_mode: 'Markdown' });
+    return bot.sendMessage(chatId, `✅ Zaten doğrulandın!\n🎮 Oyunu başlatmak için tıkla:`, {
+      reply_markup: {
+        inline_keyboard: [[
+          {
+            text: "🎮 Oyunu WebApp ile Başlat",
+            web_app: { url: "https://athype.online/" }
+          }
+        ]]
+      }
+    });
   }
 
+  // Telegram ID göster
   const a = Math.floor(Math.random() * 10 + 1);
   const b = Math.floor(Math.random() * 10 + 1);
   const answer = a + b;
 
-  bot.sendMessage(chatId, `🤖 Güvenlik doğrulaması: ${a} + ${b} = ?`);
+  bot.sendMessage(chatId, `🆔 *Senin Telegram ID'n:* \`${chatId}\`\n\n⚠️ Devam etmek için soruyu yanıtla:\n*${a} + ${b} = ?*`, {
+    parse_mode: 'Markdown'
+  });
 
+  // Cevabı bir kere dinle
   bot.once('message', (answerMsg) => {
     if (parseInt(answerMsg.text) === answer) {
       verifiedUsers.add(chatId);
-      saveVerifiedUsers();
-      bot.sendMessage(chatId, `✅ Doğrulama başarılı!\n🆔 *Senin Telegram ID’n:* \`${chatId}\`\n🎮 Bu ID’yi oyuna girerken "User ID" alanına yapıştır.\n🔗 https://athype.online/`, { parse_mode: 'Markdown' });
+
+      bot.sendMessage(chatId, `✅ Doğrulama başarılı!\n🎮 Oyunu başlatmak için aşağıdaki butona tıkla:`, {
+        reply_markup: {
+          inline_keyboard: [[
+            {
+              text: "🎮 Oyunu WebApp ile Başlat",
+              web_app: { url: "https://athype.online/" }
+            }
+          ]]
+        }
+      });
     } else {
-      bot.sendMessage(chatId, "❌ Yanlış cevap. Lütfen tekrar /start yaz.");
+      bot.sendMessage(chatId, "❌ Yanlış cevap. Tekrar /start yaz.");
     }
   });
 });
 
-// ✅ Unity'den gelen transfer isteğini işleyelim
+// ✅ Unity’den gelen skor + ID + cüzdan doğrulama ve transfer
 app.post('/transfer', async (req, res) => {
   const { wallet, score, secret, userId } = req.body;
 
@@ -87,9 +95,9 @@ app.post('/transfer', async (req, res) => {
   }
 });
 
-// ✅ Basit health check
+// ✅ Sağlık kontrolü
 app.get('/', (req, res) => {
-  res.send("🤖 Bot ve transfer sunucusu çalışıyor!");
+  res.send("🤖 Bot ve transfer sunucusu aktif!");
 });
 
 app.listen(PORT, () => {
