@@ -1,8 +1,9 @@
 require('dotenv').config();
-const TelegramBot = require('node-telegram-bot-api');
+const fs = require('fs');
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
+const TelegramBot = require('node-telegram-bot-api');
 
 const app = express();
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
@@ -14,22 +15,28 @@ const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-const verifiedUsers = new Set();
+// ✅ Doğrulanan kullanıcıları kalıcı olarak saklayan JSON dosyası
+const VERIFIED_USERS_FILE = 'verified_users.json';
+let verifiedUsers = new Set();
 
+// 🔄 Başlangıçta dosyadan kullanıcıları oku
+if (fs.existsSync(VERIFIED_USERS_FILE)) {
+  const data = fs.readFileSync(VERIFIED_USERS_FILE, 'utf-8');
+  const ids = JSON.parse(data);
+  verifiedUsers = new Set(ids);
+}
+
+// 💾 Kullanıcı doğrulandıysa dosyaya yaz
+function saveVerifiedUsers() {
+  fs.writeFileSync(VERIFIED_USERS_FILE, JSON.stringify([...verifiedUsers]), 'utf-8');
+}
+
+// ✅ /start komutu ile matematik doğrulaması
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
 
   if (verifiedUsers.has(chatId)) {
-    return bot.sendMessage(chatId, "✅ Zaten doğrulama yapılmış. Oyuna aşağıdaki butondan ulaşabilirsin:", {
-      reply_markup: {
-        inline_keyboard: [[
-          {
-            text: "🎮 Oyunu Aç",
-            web_app: { url: "https://athype.online/" }  // WebGL oyununun barındığı harici URL
-          }
-        ]]
-      }
-    });
+    return bot.sendMessage(chatId, `✅ Zaten doğrulandın.\n🆔 *Senin Telegram ID’n:* \`${chatId}\`\n🎮 Bu ID’yi oyuna girerken "User ID" alanına yapıştır.\n🔗 https://athype.online/`, { parse_mode: 'Markdown' });
   }
 
   const a = Math.floor(Math.random() * 10 + 1);
@@ -37,34 +44,32 @@ bot.onText(/\/start/, (msg) => {
   const answer = a + b;
 
   bot.sendMessage(chatId, `🤖 Güvenlik doğrulaması: ${a} + ${b} = ?`);
+
   bot.once('message', (answerMsg) => {
     if (parseInt(answerMsg.text) === answer) {
       verifiedUsers.add(chatId);
-      bot.sendMessage(chatId, "✅ Doğrulama başarılı! Oyuna aşağıdaki butondan ulaşabilirsin:", {
-        reply_markup: {
-          inline_keyboard: [[
-            {
-              text: "🎮 Oyunu Aç",
-              web_app: { url: "https://athype.online/" }  // Harici oyunun URL'si
-            }
-          ]]
-        }
-      });
+      saveVerifiedUsers();
+      bot.sendMessage(chatId, `✅ Doğrulama başarılı!\n🆔 *Senin Telegram ID’n:* \`${chatId}\`\n🎮 Bu ID’yi oyuna girerken "User ID" alanına yapıştır.\n🔗 https://athype.online/`, { parse_mode: 'Markdown' });
     } else {
       bot.sendMessage(chatId, "❌ Yanlış cevap. Lütfen tekrar /start yaz.");
     }
   });
 });
 
+// ✅ Unity'den gelen transfer isteğini işleyelim
 app.post('/transfer', async (req, res) => {
-  const { wallet, score, secret } = req.body;
+  const { wallet, score, secret, userId } = req.body;
 
   if (secret !== SHARED_SECRET) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  if (!wallet || !score) {
-    return res.status(400).json({ error: "Missing wallet or score" });
+  if (!wallet || !score || !userId) {
+    return res.status(400).json({ error: "Missing wallet, score or userId" });
+  }
+
+  if (!verifiedUsers.has(parseInt(userId))) {
+    return res.status(403).json({ error: "User not verified via Telegram" });
   }
 
   try {
@@ -72,16 +77,17 @@ app.post('/transfer', async (req, res) => {
       headers: { 'x-api-key': API_KEY }
     });
 
-    res.json({
-      message: "Transfer success",
+    return res.json({
+      message: "✅ Transfer success",
       transactionHash: response.data.transactionHash
     });
   } catch (err) {
-    console.error("🚨 Transfer Error:", err?.response?.data || err.message);
-    res.status(500).json({ error: "Transfer failed" });
+    console.error("❌ Transfer Error:", err?.response?.data || err.message);
+    return res.status(500).json({ error: "Transfer failed" });
   }
 });
 
+// ✅ Basit health check
 app.get('/', (req, res) => {
   res.send("🤖 Bot ve transfer sunucusu çalışıyor!");
 });
